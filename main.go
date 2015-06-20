@@ -1,5 +1,8 @@
 package main
 
+// sphere-thing-deleter, written by Lindsay Ward, May/June 2015
+// https://github.com/lindsaymarkward/sphere-thing-deleter
+
 import (
 	"encoding/json"
 	"fmt"
@@ -22,28 +25,34 @@ type data struct {
 	Promoted bool
 }
 
+var methodsSupported = []string{"type", "name", "promoted", "list"}
+
 func main() {
-	methodsSupported := []string{"type", "name", "promoted"}
 	var result device
 	var deviceData []data
 	var boolValue bool
+	var method string
+	var value string
 
 	// check for valid command line arguments, print usage details
-	if len(os.Args) < 3 {
-		fmt.Println("usage: sphere-thing-deleter [method] [value]")
-		fmt.Println("Supported methods:", strings.Join(methodsSupported, ", "))
-		fmt.Println("Examples")
-		fmt.Println("To delete all non-promoted things, use:                 ... promoted false")
-		fmt.Println("To delete all things with type 'light', use:            ... type light")
-		fmt.Println("To delete all things with names containing 'jim', use:  ... name jim")
+	if len(os.Args) == 2 {
+		method = os.Args[1]
+		if method != "list" {
+			printUsage()
+			os.Exit(1)
+		}
+	} else if len(os.Args) < 3 {
+		printUsage()
 		os.Exit(1)
 	}
 	// check second command-line argument, method
-	method := os.Args[1]
-	value := os.Args[2]
+	method = os.Args[1]
 	if !isStringInSlice(method, methodsSupported) {
 		fmt.Println("Invalid method. Supported methods:", strings.Join(methodsSupported, ", "))
 		os.Exit(1)
+	}
+	if method != "list" {
+		value = os.Args[2]
 	}
 
 	// convert true/false string if needed
@@ -71,6 +80,8 @@ func main() {
 	// loop through all devices, delete those that match parameters
 	for i := 0; i < len(deviceData); i++ {
 		switch method {
+		case "list":
+			fmt.Printf("%s\t%s\t\twith ID: %s\n", deviceData[i].Type, deviceData[i].Name, deviceData[i].ID)
 		case "type":
 			if deviceData[i].Type == value {
 				fmt.Printf("Deleting %s %s with ID: %s\n", deviceData[i].Type, deviceData[i].Name, deviceData[i].ID)
@@ -90,6 +101,17 @@ func main() {
 			fmt.Println("Invalid method. Use 'type' or 'name'")
 		}
 	}
+}
+
+func printUsage() {
+	fmt.Println("Usage:\n\tsphere-thing-deleter [method] [value]")
+	fmt.Println("\nSupported methods:\n\t", strings.Join(methodsSupported, ", "))
+	fmt.Println("\nExamples:")
+	fmt.Println("\tTo delete all non-promoted things, use:                 ... promoted false")
+	fmt.Println("\tTo delete all things with type 'light', use:            ... type light")
+	fmt.Println("\tTo delete all things with names containing 'jim', use:  ... name jim")
+	fmt.Println("\tTo list all the things, use:                            ... list")
+	fmt.Println()
 }
 
 func getThingsJSON() []byte {
